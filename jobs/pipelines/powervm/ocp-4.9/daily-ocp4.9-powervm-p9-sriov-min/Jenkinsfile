@@ -117,9 +117,6 @@ pipeline {
                             echo "Cluster cant deploy without master"
                             throw err
                         }
-                        env.OPENSHIFT_INSTALL_TARBALL=getOpenshiftBuild(OCP_RELEASE)
-                        env.OPENSHIFT_CLIENT_TARBALL=getOpenshiftClient(OCP_RELEASE)
-                        env.OPENSHIFT_CLIENT_TARBALL_AMD64=getOpenshiftClientAMD(OCP_RELEASE)
 
                         createTemplate(env.OS_AUTH_URL, env.MASTER_VCPUS , "${MASTER_MEMORY_MB}", env.MASTER_PROCESSORS, env.MASTER_TEMPLATE)
                         createTemplate(env.OS_AUTH_URL, env.WORKER_VCPUS , "${WORKER_MEMORY_MB}", env.WORKER_PROCESSORS, env.WORKER_TEMPLATE)

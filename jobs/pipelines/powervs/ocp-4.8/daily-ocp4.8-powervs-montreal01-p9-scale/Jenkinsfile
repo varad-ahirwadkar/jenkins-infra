@@ -93,9 +93,6 @@ pipeline {
                              echo "${RHCOS_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
                              throw err
                         }
-                        env.OPENSHIFT_INSTALL_TARBALL=getOpenshiftBuild(OCP_RELEASE)
-                        env.OPENSHIFT_CLIENT_TARBALL=getOpenshiftClient(OCP_RELEASE)
-                        env.OPENSHIFT_CLIENT_TARBALL_AMD64=getOpenshiftClientAMD(OCP_RELEASE)
                     }
                     catch (err)
                     {
