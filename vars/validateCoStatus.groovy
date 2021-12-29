@@ -15,27 +15,21 @@ def call() {
                 #ssh -o 'StrictHostKeyChecking no' -i ${WORKSPACE}/deploy/id_rsa root@${BASTION_IP} "oc adm must-gather; tar -czf must-gather.tar.gz ./must-gather*"
                 #scp -i ${WORKSPACE}/deploy/id_rsa -o StrictHostKeyChecking=no root@${BASTION_IP}:~/must-gather.tar.gz .
                 sleep_time=300
-                flag=0
+                count=0
                 for((i=0;i<18;++i)) do
-                    flag=0
-                    while IFS= read -r co; do
-                        degraded_text=$(echo $co | cut -d " " -f 5)
-                        if [ "$degraded_text" = "True" ]; then
-                            flag=1
-                            break
-                        fi
-                    done < <(oc get co | tail -n +2)
-                    if [ $flag -eq 1 ]; then
+                    count=$(oc get co --no-headers | awk '{ print $3 $4 $5 }' | grep -w -v TrueFalseFalse | wc -l)
+                    if [ $count -ne 0 ]; then
                         echo "sleeping for 5 mins all co are not up"
                         sleep $sleep_time
                     else
                         echo "All cluster operators are up and running"
                         echo "All cluster operators were up and running" > ${WORKSPACE}/co_status.txt
+                        count=0
                         oc get co
                         break
                     fi
                 done
-                if [ $flag -eq 1 ]; then
+                if [ $count -ne 0 ]; then
                     oc get co
                     echo "Cluster operators were in degraded state after 90 mins" > ${WORKSPACE}/co_status.txt
                     echo "Cluster operators are in degraded state after 90 mins Tearing off cluster!!"
