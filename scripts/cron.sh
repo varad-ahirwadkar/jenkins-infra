@@ -62,5 +62,20 @@ do
  printf "\n Output of systemd-cgtop on ${array[i]} at " && date
  ssh core@${array[i]} systemd-cgtop
 
+ printf "\n Output of /proc/slabinfo on ${array[i]} at " && date
+ ssh core@${array[i]} sudo /bin/cat /proc/slabinfo
+
+ printf "\n Output of /proc/pagetypeinfo on ${array[i]} at " && date
+ ssh core@${array[i]} sudo /bin/cat /proc/pagetypeinfo
+
+ printf "\n Output of /proc/zoneinfo on ${array[i]} at " && date
+ ssh core@${array[i]} sudo /bin/cat /proc/zoneinfo
+
+ printf "\n Output of top  -b -n 1 on ${array[i]} at " && date
+ ssh core@${array[i]} sudo /bin/top  -b -n 1
+
+ printf "\n Output of /bin/dmesg on ${array[i]} at " && date
+ ssh core@${array[i]} sudo /bin/dmesg
+
  printf "\n***************************************************************\n"
 done
