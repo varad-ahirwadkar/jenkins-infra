@@ -154,11 +154,6 @@ pipeline {
                 setupKubeconfigOcp4()
             }
         }
-        stage('Validate CO status') {
-            steps {
-                validateCoStatus()
-            }
-        }
         stage('Setup and run ansible extra') {
             steps {
                setupAndRunE2e()
