@@ -159,11 +159,6 @@ pipeline {
                 }
             }
         }
-        stage('Validate CO status') {
-            steps {
-                validateCoStatus()
-            }
-        }
         stage('Setup and run ansible extra') {
             steps {
                setupAndRunE2e()
