@@ -13,7 +13,7 @@ limitations under the License.
 '
 #-------------------------------------------------------------------------
 set -e
-source <(curl -L https://raw.githubusercontent.com/ocp-power-automation/openshift-install-power/9b65c00a7d11c02a14395989e7e783646ad2f6df/openshift-install-powervs 2> /dev/null |  grep -v 'main "$@"')
+source <(curl -L https://raw.githubusercontent.com/ocp-power-automation/openshift-install-power/f3ca66402921c00a5637be678f547192b83ac3e2/openshift-install-powervs 2> /dev/null |  grep -v 'main "$@"')
 source <(curl -L https://raw.githubusercontent.com/ppc64le-cloud/pvsadm/master/samples/convert-upload-images-powervs/convert-upload-images-powervs 2> /dev/null | grep -v 'main "$@"')
 
 function help {
