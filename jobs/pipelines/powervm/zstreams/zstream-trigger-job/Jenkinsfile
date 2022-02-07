@@ -14,7 +14,7 @@ pipeline {
             steps {
                 script {
                     // Copy the builds of OCP releases from last successful job
-                    step([  $class: 'CopyArtifact', filter: "versions/*", fingerprintArtifacts: true, projectName: 'ZStream_Trigger', target: ".", optional: true, selector: lastSuccessful() ])
+                    step([  $class: 'CopyArtifact', filter: "versions/*", fingerprintArtifacts: true, projectName: 'zstream-trigger-job', target: ".", optional: true, selector: lastSuccessful() ])
                 }
             }
         }
@@ -151,7 +151,7 @@ void triggerBuild(release, latestBuild, currentStableBuild, nextStableBuild, nex
     
     //Direct deployment Job Trigger
     echo "Latest Build: $latestBuild"
-    build job: 'ZStream_Direct_Deploy', wait: false,parameters: [
+    build job: 'zstream-ocp4x-p8-min-direct-deploy', wait: false,parameters: [
         string(name: 'Release', value: "${release}"),
         string(name: 'Build', value: "${latestBuild}"),
         string(name: 'KeepFor', value: "${keepfor}")
@@ -161,7 +161,7 @@ void triggerBuild(release, latestBuild, currentStableBuild, nextStableBuild, nex
     if (latestBuild != currentStableBuild ){
      echo "Current Release Stable Build: $currentStableBuild"
      sleep 840
-     build job: 'ZStream_Current_Stable_Upgrade', wait: false,parameters: [
+     build job: 'zstream-ocp4x-p8-min-current-upgrade', wait: false,parameters: [
          string(name: 'Release', value: "${release}"),
          string(name: 'CurrentBuild', value: "${currentStableBuild}"),
          string(name: 'UpgradeBuild', value: "${latestBuild}"),
@@ -173,7 +173,7 @@ void triggerBuild(release, latestBuild, currentStableBuild, nextStableBuild, nex
     if (nextStableBuild != "default"){
         echo "Next Release Stable Build: ${nextStableBuild}"
         sleep 840
-        build job: 'ZStream_Next_Stable_Upgrade', wait: false,parameters: [
+        build job: 'zstream-ocp4x-p8-min-next-upgrade', wait: false,parameters: [
             string(name: 'Release', value: "${release}"),
             string(name: 'UpgradeRelease', value: "${next_release}"),
             string(name: 'CurrentBuild', value: "${latestBuild}"),
