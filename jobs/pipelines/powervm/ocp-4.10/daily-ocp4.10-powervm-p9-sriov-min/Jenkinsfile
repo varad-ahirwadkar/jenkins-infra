@@ -61,6 +61,8 @@ pipeline {
                     env.NETWORK_TYPE = "SRIOV"
                     env.OS_NETWORK = "icp_network2"
                     env.OS_PRIVATE_NETWORK = "icp_network2"
+                    //Issue-2277 Remove scg id when npiv issue is resolved
+                    env.SCG_ID = "35eb7843-2e40-4839-a1e3-dead98259dde"
                 }
             }
         }
