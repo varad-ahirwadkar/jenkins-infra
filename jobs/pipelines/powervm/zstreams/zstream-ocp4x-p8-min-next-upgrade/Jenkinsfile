@@ -59,6 +59,7 @@ pipeline {
                     wrap([$class: 'BuildUser']) {
                         env.INSTANCE_NAME = "rdr-zsnxt"
                     }
+                   env.TERRAFORM_VER = "0.13.0"
                     //TODO: Issue 2420 Uncomment lines
                   //  env.OS_TENANT_NAME="icp-test"
                    // env.OS_NETWORK = "workload"
