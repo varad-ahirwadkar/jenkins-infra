@@ -21,6 +21,9 @@ def call() {
             env.HELPERNODE_TAG = "324e09e3d303101874f540730c993cd986ddbc04"
             env.INSTALL_PLAYBOOK_REPO = "https://github.com/ocp-power-automation/ocp4-playbooks"
             switch (env.OCP_RELEASE) {
+                case "4.11":
+                    env.INSTALL_PLAYBOOK_TAG = "284b597b3e88c635e3069b82926aa16812238492"
+                    break
                 case "4.10":
                     env.INSTALL_PLAYBOOK_TAG = "284b597b3e88c635e3069b82926aa16812238492"
                     break
