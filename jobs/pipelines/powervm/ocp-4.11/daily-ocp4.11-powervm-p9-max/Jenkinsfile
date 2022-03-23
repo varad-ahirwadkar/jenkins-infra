@@ -23,16 +23,16 @@ pipeline {
         OS_AUTH_URL=credentials('URL_SCNLCICDPOWERVC')
 
         //Env constants
-        HARDWARE_CHOSE = "P10"
+        HARDWARE_CHOSE = "P9"
         TERRAFORM_VER = "0.13.0"
-        AVAILABILITY_ZONE = "p10"
-        OCP_RELEASE="4.10"
+        AVAILABILITY_ZONE = "p9"
+        OCP_RELEASE="4.11"
         TARGET = "deploy-openshift4-powervc"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
         POWERVS = false
         SCRIPT_DEPLOYMENT = false
         WAIT_FOR_DEBUG = "1"
-        REDHAT_RELEASE = "8.4"
+        REDHAT_RELEASE = "8.5"
 
         //Branch
         OPENSHIFT_POWERVC_GIT_TF_DEPLOY_BRANCH="master"//The download branch
@@ -43,7 +43,7 @@ pipeline {
         GOLANG_TARBALL="https://dl.google.com/go/go1.17.6.linux-ppc64le.tar.gz"
 
         // Type of configuration
-        CONFIG_TYPE="min"
+         CONFIG_TYPE="max"
 	 }
 
     stages {
@@ -56,8 +56,9 @@ pipeline {
             steps {
                 setupCommonEnvironmentVariables()
                 setupClusterConfig("${CONFIG_TYPE}")
+                //TODO: issue 2441 remove it when npiv issue is resolved
                 script {
-                    env.CNI_NETWORK_PROVIDER = "OVNKubernetes"
+                env.SCG_ID = "35eb7843-2e40-4839-a1e3-dead98259dde"
                 }
             }
         }
