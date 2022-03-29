@@ -25,7 +25,7 @@ pipeline {
         //Env constants
         HARDWARE_CHOSE = "P10"
         TERRAFORM_VER = "0.13.0"
-        AVAILABILITY_ZONE = "p10_pvm"
+        AVAILABILITY_ZONE = "p10"
         OCP_RELEASE="4.11"
         TARGET = "deploy-openshift4-powervc"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
@@ -91,13 +91,11 @@ pipeline {
                             echo "latest-${OCP_RELEASE}-build.txt file does not exist. Please check mirror-openshift-release job"
                             throw err
                         }
-                        //TODO: issue 2392 replace ssp image
-                        env.RHCOS_IMAGE_NAME = "ssp-cicd-rhcos_410.84.202110101403-0-openstack.ppc64le"
-                        env.RHCOS_IMAGE_ID = "0127fb22-8534-46f6-8139-b6796d040d95"
+                        env.RHCOS_IMAGE_NAME = "ssp-cicd-rhcos-411.85.202203090210-0-openstack.ppc64le"
+                        env.RHCOS_IMAGE_ID = "d4a6dacc-17c0-498c-b54c-53afcb3c080d"
 
-                        //TODO: issue 2392 replace ssp image
-                        env.BASTION_IMAGE_NAME = "ssp-cicd-rhel8_4-2021-05-24-ppc64le"
-                        env.BASTION_IMAGE_ID = "378a2ac4-651c-42b7-9c61-ed8df6d8d752"
+                        env.BASTION_IMAGE_NAME = "ssp-cicd-rhel8_5_2021-12-13-ppc64le"
+                        env.BASTION_IMAGE_ID = "0225d9fd-605c-4665-8f23-4947213e7497"
                         if (env.DEPLOY_MASTER == "false")
                         {
                             echo "Cluster cant deploy without master"
