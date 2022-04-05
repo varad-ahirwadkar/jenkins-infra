@@ -25,7 +25,7 @@ pipeline {
         //Env constants
         HARDWARE_CHOSE = "P10"
         TERRAFORM_VER = "0.13.0"
-        AVAILABILITY_ZONE = "p10"
+        AVAILABILITY_ZONE = "p10_pvm"
         OCP_RELEASE="4.9"
         TARGET = "deploy-openshift4-powervc"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"

@@ -58,6 +58,7 @@ pipeline {
                 setupClusterConfig("${CONFIG_TYPE}")
                 script {
                     env.CNI_NETWORK_PROVIDER = "OVNKubernetes"
+                    env.E2E_EXCLUDE_LIST = "https://raw.github.ibm.com/redstack-power/e2e-exclude-list/${env.OCP_RELEASE}-powervs/ocp${env.OCP_RELEASE}_power_exclude_list_OVNKubernetes.txt"
                 }
             }
         }
