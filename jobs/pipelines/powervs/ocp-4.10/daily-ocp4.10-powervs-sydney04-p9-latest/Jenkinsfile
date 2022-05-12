@@ -1,0 +1,190 @@
+@Library('jenkins-upstream-library') _
+
+pipeline {
+    agent {
+         kubernetes {
+            inheritFrom 'jenkins-agent'
+        }
+    }
+       environment {
+        //users and credentials. All must be defined in Jenkins Credentials
+        GITHUB_USER = credentials('GITHUB_USER')
+        IBMCLOUD_API_KEY = credentials('IBMCLOUD_API_KEY')
+        GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+        REDHAT_USERNAME = credentials('REDHAT_USERNAME')
+        REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
+        PULL_SECRET = credentials('PULL_SECRET')
+
+        //Env constants
+        TERRAFORM_VER = "0.13.4"
+
+        IBM_CLOUD_REGION = "syd"
+        IBM_CLOUD_ZONE = "syd04"
+        SERVICE_INSTANCE_ID = "6d030c4b-64a3-494d-aeed-8c453dd98903"
+
+        BASTION_IMAGE = "rhel-84"
+        RHCOS_IMAGE = "rhcos-ci-410"
+        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-ocp-cicd-sydney-04.txt"
+        OCP_RELEASE = "4.10"
+
+        //e2e specific variables
+        ENABLE_E2E_TEST = "true"
+        GOLANG_TARBALL = "https://golang.org/dl/go1.17.6.linux-ppc64le.tar.gz"
+
+        //Makefile variables
+        OPENSHIFT_POWERVS_GIT_TF_DEPLOY_BRANCH="master" //The download branch
+
+        TARGET = "deploy-openshift4-powervs"
+        TEMPLATE_FILE = ".${TARGET}.tfvars.template"
+        POWERVS = true
+        SCRIPT_DEPLOYMENT = false
+        WAIT_FOR_DEBUG = "0"
+
+        // Type of configuration
+        CONFIG_TYPE="min"
+        PVSADM_VERSION="v0.1.4"
+        CRN_OBJECT = "crn:v1:bluemix:public:cloud-object-storage:global:a/65b64c1f1c29460e8c2e4bbfbd893c2c:8aeefa98-c07b-4d22-aa7a-1694374ae275::"
+        BUCKET_NAME="ocp4-images-bucket"
+	 }
+
+    stages {
+        stage('Download and upload latest rhcos image') {
+            steps {
+                script {
+                    env.RHCOS_IMAGE_NAME=sh(returnStdout:true, script: '''echo "${RHCOS_IMAGE}-$(date +%m%d%Y)" ''').trim()
+                    sh(returnStatus: false, returnStdout: false, script: "curl -sL https://raw.githubusercontent.com/ppc64le-cloud/pvsadm/master/get.sh | VERSION=${PVSADM_VERSION} FORCE=1 bash")
+                    downloadAndUploadImage()
+                }
+            }
+        }
+        stage('Clone ansible extra') {
+            steps {
+                cloneRepo("git@github.ibm.com:redstack-power/ocp4_ansible_extras.git", "ansible_extra")
+            }
+        }
+        stage('Setup Common Environment Variables') {
+            steps {
+                setupCommonEnvironmentVariables()
+                setupClusterConfig("${CONFIG_TYPE}")
+                script {
+                  env.INSTALL_PLAYBOOK_TAG=sh(returnStdout:true, script: '''git ls-remote "${INSTALL_PLAYBOOK_REPO}" refs/heads/master | cut -f1''').trim()
+                  env.HELPERNODE_TAG=sh(returnStdout:true, script: '''git ls-remote "${HELPERNODE_REPO}" refs/heads/master | cut -f1''').trim()
+                }
+            }
+        }
+        stage('pull artifact') {
+            steps {
+                getArtifacts("mirror-openshift-release", "latest-${OCP_RELEASE}-build.txt" )
+                getArtifacts("powervs/poll-powervs-images", "${BASTION_IMAGE_FILE}")
+            }
+        }
+        //Checkout the installer git repo
+        stage('Prepare Terraform Template') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try
+                    {
+                        pullSecret()
+                        env.OPENSHIFT_IMAGE = ""
+                        env.OCP_RELEASE_TAG = ""
+                        if (fileExists("deploy/artifactory/latest-${OCP_RELEASE}-build.txt")) {
+                            env.OPENSHIFT_IMAGE = readFile "deploy/artifactory/latest-${OCP_RELEASE}-build.txt"
+                            env.OPENSHIFT_IMAGE = env.OPENSHIFT_IMAGE.trim()
+                            env.OCP_RELEASE_TAG = env.OPENSHIFT_IMAGE.split(":")[1].trim()
+                        }
+                        else {
+                            echo "latest-${OCP_RELEASE}-build.txt file does not exist. Please check mirror-openshift-release job"
+                            throw err
+                        }
+                        if (fileExists("deploy/artifactory/${BASTION_IMAGE_FILE}")) {
+                            env.BASTION_IMAGE_NAME = readFile "deploy/artifactory/${BASTION_IMAGE_FILE}"
+                            env.BASTION_IMAGE_NAME = env.BASTION_IMAGE_NAME.trim()
+                        }
+                        else{
+                            echo "${BASTION_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
+                            throw err
+                        }
+                    }
+                    catch (err)
+                    {
+                        echo 'Error ! Template preparation failed !'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                }
+            }
+        }
+        stage('Initialize Environment') {
+            steps {
+                initializeEnvironment()
+            }
+        }
+        stage('Setup Terraform Plugin') {
+            steps {
+                setupTerraformPlugin()
+            }
+        }
+        stage('Deploy OCP Cluster') {
+            steps {
+                deployCluster()
+            }
+        }
+        stage('Run crontab script for capturing outputs of multiple commands') {
+            steps {
+                crontabCommandCaptureScript()
+            }
+        }
+        stage('Setup Kubectl') {
+            steps {
+                setupKubeconfigOcp4()
+            }
+        }
+        stage('Setup and run ansible extra') {
+            steps {
+               setupAndRunE2e()
+            }
+        }
+        stage('Gather pprof and prometheus data') {
+            steps {
+                gatherPrometheusData()
+            }
+        }
+    }
+    post {
+        always {
+            archiveAllArtifacts("deploy/conformance-parallel-out.txt.tar.gz", "deploy/summary.txt", "deploy/vars.tfvars",
+                "cpu-pre.pprof", "heap-pre.pprof", "prometheus.tar.gz", "deploy/cron.log", "must-gather.tar.gz")
+            cleanupOcp4Cluster()
+            checkInfraError()
+            processE2eResults()
+            dbDashboardUpdateE2e()
+            cleanupPowerVSResources()
+            cleanupImage()
+            notifyBySlack(currentBuild.result, env.MESSAGE)
+            cleanWs()
+        }
+    }
+}
+
+def downloadAndUploadImage() {
+  sh'''
+      region="us-south"
+      curl -L https://mirror.openshift.com/pub/openshift-v4/ppc64le/dependencies/rhcos/${OCP_RELEASE}/latest/rhcos-powervs.ppc64le.ova.gz -o "${RHCOS_IMAGE_NAME}.ova.gz"
+      pvsadm image upload --bucket "${BUCKET_NAME}" -f ./${RHCOS_IMAGE_NAME}.ova.gz -r $region
+      pvsadm image import -b "${BUCKET_NAME}" -r "$region" -i "${SERVICE_INSTANCE_ID}" -o "${RHCOS_IMAGE_NAME}.ova.gz" --pvs-image-name "${RHCOS_IMAGE_NAME}" --pvs-storagetype tier1   -w
+      #Adding sleep as sometimes the image is not picked by terraform
+      sleep 300
+  '''
+}
+
+def cleanupImage() {
+    sh '''
+        ibmcloud plugin install cloud-object-storage -f
+        ibmcloud cos config crn --crn "${CRN_OBJECT}"
+        ibmcloud cos object-delete --bucket "${BUCKET_NAME}" --key "${RHCOS_IMAGE_NAME}.ova.gz" --force
+        pvsadm purge images -i "${SERVICE_INSTANCE_ID}" --regexp "${RHCOS_IMAGE_NAME}" --no-prompt
+    '''
+}
