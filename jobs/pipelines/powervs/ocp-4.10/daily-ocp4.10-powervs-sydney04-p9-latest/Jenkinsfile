@@ -14,6 +14,9 @@ pipeline {
         REDHAT_USERNAME = credentials('REDHAT_USERNAME')
         REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
         PULL_SECRET = credentials('PULL_SECRET')
+        //TODO: Remove it when pvsadm #275 is resolved
+        SECRET_KEY_POWERVS = credentials('SECRET_KEY_POWERVS')
+	ACCESS_KEY_POWERVS = credentials('ACCESS_KEY_POWERVS')
 
         //Env constants
         TERRAFORM_VER = "0.13.4"
@@ -174,7 +177,8 @@ def downloadAndUploadImage() {
       region="us-south"
       curl -L https://mirror.openshift.com/pub/openshift-v4/ppc64le/dependencies/rhcos/${OCP_RELEASE}/latest/rhcos-powervs.ppc64le.ova.gz -o "${RHCOS_IMAGE_NAME}.ova.gz"
       pvsadm image upload --bucket "${BUCKET_NAME}" -f ./${RHCOS_IMAGE_NAME}.ova.gz -r $region
-      pvsadm image import -b "${BUCKET_NAME}" -r "$region" -i "${SERVICE_INSTANCE_ID}" -o "${RHCOS_IMAGE_NAME}.ova.gz" --pvs-image-name "${RHCOS_IMAGE_NAME}" --pvs-storagetype tier1   -w
+      #TODO: Remove access and secret key when pvsadm #275 is resolved
+      pvsadm image import -b "${BUCKET_NAME}" -r "$region" -i "${SERVICE_INSTANCE_ID}" -o "${RHCOS_IMAGE_NAME}.ova.gz" --pvs-image-name "${RHCOS_IMAGE_NAME}" --pvs-storagetype tier1 --accesskey "${ACCESS_KEY_POWERVS}" --secretkey "${SECRET_KEY_POWERVS}" -w
       #Adding sleep as sometimes the image is not picked by terraform
       sleep 300
   '''

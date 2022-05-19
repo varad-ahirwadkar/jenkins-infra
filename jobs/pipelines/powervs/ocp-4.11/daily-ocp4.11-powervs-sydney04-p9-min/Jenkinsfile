@@ -22,7 +22,7 @@ pipeline {
         IBM_CLOUD_ZONE = "syd04"
         SERVICE_INSTANCE_ID = "6d030c4b-64a3-494d-aeed-8c453dd98903"
 
-        BASTION_IMAGE = "rhel-85"
+        BASTION_IMAGE = "rhel-86"
         RHCOS_IMAGE = "rhcos-411"
         BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-ocp-cicd-sydney-04.txt"
         RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-ocp-cicd-sydney-04.txt"
