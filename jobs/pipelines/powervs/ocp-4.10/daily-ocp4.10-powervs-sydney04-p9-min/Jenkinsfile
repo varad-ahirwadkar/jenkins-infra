@@ -18,9 +18,13 @@ pipeline {
         //Env constants
         TERRAFORM_VER = "0.13.4"
 
-        IBM_CLOUD_REGION = "syd"
-        IBM_CLOUD_ZONE = "syd04"
-        SERVICE_INSTANCE_ID = "6d030c4b-64a3-494d-aeed-8c453dd98903"
+        IBM_CLOUD_REGION = "tor"
+        IBM_CLOUD_ZONE = "tor01"
+        SERVICE_INSTANCE_ID = "4a1f10a2-0797-4ac8-9c41-44bc04b2d18f"
+        //TODO: Issue 2584 Running the jobs temporarily with Toronto
+        //IBM_CLOUD_REGION = "syd"
+        //IBM_CLOUD_ZONE = "syd04"
+        //SERVICE_INSTANCE_ID = "6d030c4b-64a3-494d-aeed-8c453dd98903"
 
         BASTION_IMAGE = "rhel-84"
         RHCOS_IMAGE = "rhcos-410"
