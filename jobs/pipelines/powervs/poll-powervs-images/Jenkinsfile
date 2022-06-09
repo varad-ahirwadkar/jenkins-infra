@@ -1,8 +1,6 @@
 @Library('jenkins-upstream-library') _
 //Define Global variable
 def INSTANCE_NAME_LIST = [
-                    "ocp-cicd-london-04",
-                    "ocp-cicd-london-06",
                     "ocp-cicd-montreal-01",
                     "ocp-cicd-osaka-21",
                     "ocp-cicd-sydney-04",
