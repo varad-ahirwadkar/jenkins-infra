@@ -1,0 +1,254 @@
+@Library('jenkins-upstream-library') _
+
+pipeline {
+    agent {
+        docker {
+            image 'quay.io/powercloud/inbound-agent:4.6-1.3'
+            args '-v /etc/resolv.conf:/etc/resolv.conf'
+            label 'jump-vpc-x86_64'
+        }
+    }
+    
+    parameters {
+        string(defaultValue: '', description: 'Current Build(quay image or build number)', name: 'CurrentBuild')
+        string(defaultValue: '', description: 'Upgrade Build(quay image or build number)', name: 'UpgradeBuild')
+        validatingString(defaultValue: '', description: "Build Release, eg. 4.9", name: "Release", regex: /^[0-9]\.[0-9]+$/, failedValidationMessage: "Please enter OCP releases like 4.9")
+        validatingString(defaultValue: '', description: "Upgrade Build Release, eg. 4.9", name: "UpgradeRelease", regex: /^[0-9]\.[0-9]+$/, failedValidationMessage: "Please enter OCP releases like 4.9")
+        string(defaultValue: '720', description: 'Enter time(in Minutes) to retain the cluster', name: 'KeepFor')
+    }
+
+    environment {
+        //users and credentials. All must be defined in Jenkins Credentials
+        GITHUB_USER = credentials('GITHUB_USER')
+        IBMCLOUD_API_KEY = credentials('IBM_PCLOUD_QE_API_KEY')
+        GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+        REDHAT_USERNAME = credentials('REDHAT_USERNAME')
+        REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
+        PULL_SECRET = credentials('PULL_SECRET')
+
+        //Env constants
+        TERRAFORM_VER = "0.13.4"
+
+        //rdr-ocp-upi-validation-tor01 service instance
+        IBM_CLOUD_REGION = "tor"
+        IBM_CLOUD_ZONE = "tor01"
+        SERVICE_INSTANCE_ID = "54903e51-c4d2-42be-bfa1-d31c708ddf31"
+
+        OCP_RELEASE = "${params.Release}"
+        UPGRADE_RELEASE="${params.UpgradeRelease}"
+        CURRENT_BUILD="${params.CurrentBuild}"
+        UPGRADE_BUILD="${params.UpgradeBuild}"
+        RHCOS_IMAGE="rhcos-${OCP_RELEASE}".replaceAll("\\.", "");
+        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-ocp-upi-validation-tor01.txt"
+        TIMEOUT = "${params.KeepFor}"
+
+        //e2e specific variables
+        ENABLE_E2E_TEST = "false"
+        GOLANG_TARBALL = "https://golang.org/dl/go1.17.6.linux-ppc64le.tar.gz"
+
+        //Makefile variables
+        OPENSHIFT_POWERVS_GIT_TF_DEPLOY_BRANCH="master" //The download branch
+
+        TARGET = "deploy-openshift4-powervs"
+        TEMPLATE_FILE = ".${TARGET}.tfvars.template"
+        POWERVS = true
+        SCRIPT_DEPLOYMENT = false
+        WAIT_FOR_DEBUG = "0"
+
+        // Type of configuration
+        CONFIG_TYPE="min"
+	 }
+
+    stages {
+        stage('Clone ansible extra and ocp4_playbooks') {
+            steps {
+                cloneRepo("git@github.ibm.com:redstack-power/ocp4_ansible_extras.git", "ansible_extra")
+            }
+        }
+        stage('Setup Common Environment Variables') {
+            steps {
+                setupCommonEnvironmentVariables()
+                setupClusterConfig("${CONFIG_TYPE}")
+                script {
+                    wrap([$class: 'BuildUser']) {
+                        env.INSTANCE_NAME = "rdr-qe-ocp-upi"
+                   }
+                    env.UPGRADE_DELAY_TIME = "600"
+                    env.UPGRADE_PAUSE_TIME = "90"
+                    if (env.OCP_RELEASE == "4.10"){
+                        env.BASTION_IMAGE = "rhel-86"
+                    } else {
+                        env.BASTION_IMAGE = "rhel-85"
+                    }
+                    env.BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-upi-validation-tor01.txt"
+                }
+            }
+        }
+        stage('pull artifact') {
+            steps {
+                getArtifacts("powervs/poll-powervs-images", "${BASTION_IMAGE_FILE}")
+                getArtifacts("powervs/poll-powervs-images", "${RHCOS_IMAGE_FILE}" )
+            }
+        }
+        //Checkout the installer git repo
+        stage('Prepare Terraform Template') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try
+                    {
+                        pullSecret()
+                        env.OPENSHIFT_IMAGE = ""
+                        if (env.CURRENT_BUILD?.trim()) {
+                            if (!env.CURRENT_BUILD.contains('quay')) {
+                                env.OPENSHIFT_IMAGE  = "sys-powercloud-docker-local.artifactory.swg-devops.com/ocp-ppc64le/release-ppc64le:${env.CURRENT_BUILD}"
+                                sh '''
+                                    apt update
+                                    apt install docker docker.io jq -y
+                                    docker login sys-powercloud-docker-local.artifactory.swg-devops.com -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+                                    docker pull ${OPENSHIFT_IMAGE}
+                                    if [ $? -ne 0 ]; then
+                                        echo "${OPENSHIFT_IMAGE}  not found"
+                                        exit 1
+                                    fi
+                                '''
+                            }
+                            else {
+                               env.OPENSHIFT_IMAGE = env.CURRENT_BUILD
+                            }
+                        }
+                        else {
+                            echo "Current build is empty! Please check parameters."
+                            throw err
+                        }
+
+                        if (env.UPGRADE_BUILD?.trim()) {
+                            if (!env.UPGRADE_BUILD.contains('quay')) {
+                                env.UPGRADE_IMAGE  = "sys-powercloud-docker-local.artifactory.swg-devops.com/ocp-ppc64le/release-ppc64le:${env.UPGRADE_BUILD}"
+                                sh '''
+                                    apt update
+                                    apt install docker docker.io jq -y
+                                    docker login sys-powercloud-docker-local.artifactory.swg-devops.com -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+                                    docker pull ${UPGRADE_IMAGE}
+                                    if [ $? -ne 0 ]; then
+                                        echo "${UPGRADE_IMAGE} not found"
+                                        exit 1
+                                    fi
+                                '''
+                            }
+                            else {
+                               env.UPGRADE_IMAGE=env.UPGRADE_BUILD
+                            }
+                        }
+                        else{
+                            echo "Upgrade build is empty! Please check parameters."
+                            throw err
+                        }
+
+                        if (fileExists("deploy/artifactory/${BASTION_IMAGE_FILE}")) {
+                            env.BASTION_IMAGE_NAME = readFile "deploy/artifactory/${BASTION_IMAGE_FILE}"
+                            env.BASTION_IMAGE_NAME = env.BASTION_IMAGE_NAME.trim()
+                        }
+                        else{
+                            echo "${BASTION_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
+                            throw err
+                        }
+                        if (fileExists("deploy/artifactory/${RHCOS_IMAGE_FILE}")) {
+                            env.RHCOS_IMAGE_NAME = readFile "deploy/artifactory/${RHCOS_IMAGE_FILE}"
+                            env.RHCOS_IMAGE_NAME = env.RHCOS_IMAGE_NAME.trim()
+                        }
+                        else{
+                            echo "${RHCOS_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
+                            throw err
+                        }
+                    }
+                    catch (err)
+                    {
+                        echo 'Error ! Template preparation failed !'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                }
+            }
+        }
+        stage('Initialize Environment') {
+            steps {
+                initializeEnvironment()
+            }
+        }
+        stage('Setup Terraform Plugin') {
+            steps {
+                setupTerraformPlugin()
+            }
+        }
+        stage('Deploy OCP Cluster') {
+            steps {
+                deployCluster()
+            }
+        }
+        stage('Run crontab script for capturing outputs of multiple commands') {
+            steps {
+                crontabCommandCaptureScript()
+            }
+        }
+        stage('Setup Kubectl') {
+            steps {
+                setupKubeconfigOcp4()
+            }
+        }
+        stage('Validate CO status') {
+            steps {
+                validateCoStatus()
+            }
+        }
+        stage('Gather pprof and prometheus data') {
+            steps {
+                gatherPrometheusData()
+            }
+        }
+        stage('Waiting to timeout') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try {
+                            TIMEOUT_MIN = TIMEOUT.toInteger()
+                            if ( TIMEOUT_MIN != 0 ){
+                                TIMEOUT_SEC=TIMEOUT_MIN*60
+                                echo "HOLDING THE CLUSTER TEAR DOWN FOR ${TIMEOUT_MIN} MINUTES"
+                                sleep TIMEOUT_SEC
+                            }
+                        }
+                    catch (err) {
+                            echo 'Error ! Timeout stage failed!'
+                            env.FAILED_STAGE=env.STAGE_NAME
+                            throw err
+                    }
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script{
+                try{
+                    archiveAllArtifacts("deploy/vars.tfvars",
+                        "cpu-pre.pprof", "heap-pre.pprof", "prometheus.tar.gz", "deploy/cron.log", "must-gather.tar.gz")
+                    cleanupOcp4Cluster()
+                    checkInfraError()
+                    processE2eResults()
+                    notifyBySlack(currentBuild.result, env.MESSAGE)
+                }
+                catch (err){
+                    echo 'Error ! Always block failed!' 
+                }
+                finally{
+                    cleanWs()
+                }
+            }
+        }
+    }
+}
