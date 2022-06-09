@@ -3,9 +3,7 @@
     name: {{ JOB_NAME }}
     project-type: pipeline
     triggers:
-      - timed: {% if 'daily-powervs-london-04-p9-stability-check' in JOB_NAME %}"0 */12 * * * "
-        {% elif 'daily-powervs-london-06-p9-stability-check' in JOB_NAME %}"0 */12 * * * "
-        {% elif 'daily-powervs-montreal01-p9-stability-check' in JOB_NAME %}"0 */12 * * * "
+      - timed: {% if 'daily-powervs-montreal01-p9-stability-check' in JOB_NAME %}"0 */12 * * * "
         {% elif 'daily-powervs-osaka21-p9-stability-check' in JOB_NAME %}"0 */12 * * * "
         {% elif 'daily-powervs-sydney-p9-stability-check' in JOB_NAME %}"0 */12 * * * "
         {% elif 'daily-powervs-tokyo-p9-stability-check' in JOB_NAME %}"0 */12 * * * "
