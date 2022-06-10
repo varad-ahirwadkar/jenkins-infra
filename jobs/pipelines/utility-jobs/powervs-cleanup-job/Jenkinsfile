@@ -1,19 +1,11 @@
 @Library('jenkins-upstream-library') _
 
 def INSTANCE_NAME_LIST = [
-                    "ocp-cicd-dallas",
-                    "ocp-cicd-dallas-12",
-                    "ocp-cicd-frankfurt-01",
-                    "ocp-cicd-frankfurt-02",
-                    "ocp-cicd-london-04",
-                    "ocp-cicd-london-06",
-                    "ocp-cicd-montreal-01",
-                    "ocp-cicd-osaka-21",
-                    "ocp-cicd-saopaulo-01",
-                    "ocp-cicd-sydney-04",
-                    "ocp-cicd-tokyo-04",
-                    "ocp-cicd-toronto-01",
-                    "ocp-cicd-washington"
+                    "rdr-ocp-cicd-montreal01",
+                    "rdr-ocp-cicd-osaka21",
+                    "rdr-ocp-cicd-sydney04",
+                    "rdr-ocp-cicd-tokyo04",
+                    "rdr-ocp-cicd-toronto01"
                     ]
 
 pipeline {
@@ -28,8 +20,8 @@ pipeline {
     environment {
         //users and credentials. All must be defined in Jenkins Credentials
         IBMCLOUD_API_KEY = credentials('IBMCLOUD_API_KEY')
-        CRN = "crn:v1:bluemix:public:power-iaas:tor01:a/65b64c1f1c29460e8c2e4bbfbd893c2c:4a1f10a2-0797-4ac8-9c41-44bc04b2d18f::"
-        PVSADM_VERSION = "v0.1.4-alpha.1"
+        CRN = "crn:v1:bluemix:public:power-iaas:tor01:a/7cfbd5381a434af7a09289e795840d4e:007e0e92-91d5-4f30-bc63-ca515660a4c2::"
+        PVSADM_VERSION = "v0.1.5"
 	}
 
 	stages {

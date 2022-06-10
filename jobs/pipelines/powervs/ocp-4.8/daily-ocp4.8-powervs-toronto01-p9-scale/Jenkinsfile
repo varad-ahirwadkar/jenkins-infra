@@ -10,7 +10,7 @@ pipeline {
     environment {
         //users and credentials. All must be defined in Jenkins Credentials
         GITHUB_USER = credentials('GITHUB_USER')
-        IBMCLOUD_API_KEY = credentials('IBMCLOUD_API_KEY')
+        IBMCLOUD_API_KEY = credentials('IBMCLOUD_UPSTREAM_CI_API_KEY')
         GITHUB_TOKEN = credentials('GITHUB_TOKEN')
         REDHAT_USERNAME = credentials('REDHAT_USERNAME')
         REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
@@ -20,12 +20,12 @@ pipeline {
         TERRAFORM_VER = "0.13.4"
         IBM_CLOUD_REGION = "tor"
         IBM_CLOUD_ZONE = "tor01"
-        SERVICE_INSTANCE_ID = "4a1f10a2-0797-4ac8-9c41-44bc04b2d18f"
+        SERVICE_INSTANCE_ID = "007e0e92-91d5-4f30-bc63-ca515660a4c2"
 
         BASTION_IMAGE = "rhel-83"
         RHCOS_IMAGE = "rhcos-48"
-        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-ocp-cicd-toronto-01.txt"
-        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-ocp-cicd-toronto-01.txt"
+        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-cicd-toronto01.txt"
+        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-ocp-cicd-toronto01.txt"
         OCP_RELEASE = "4.8"
         ENABLE_E2E_TEST = "false"
 

@@ -58,7 +58,7 @@ pipeline {
 	}
     environment {
         //Credentials. All must be defined in Jenkins Credentials
-        IBMCLOUD_API_KEY = credentials('IBMCLOUD_API_KEY')
+        IBMCLOUD_API_KEY = credentials('IBMCLOUD_UPSTREAM_CI_API_KEY')
         RHEL_SUBSCRIPTION_USERNAME = credentials('REDHAT_USERNAME')
         RHEL_SUBSCRIPTION_PASSWORD = credentials('REDHAT_PASSWORD')
         //Parameters
