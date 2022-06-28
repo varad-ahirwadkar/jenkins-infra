@@ -147,7 +147,15 @@ pipeline {
                                 '''
                             }
                             else {
-                               env.UPGRADE_IMAGE=env.UPGRADE_BUILD
+                                def OCP_VERSION_PATTERN = ~/[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}/
+                                def OCP_UPGRADE_VERSION = (env.UPGRADE_BUILD =~ OCP_VERSION_PATTERN)
+                                if (env.UPGRADE_RELEASE == "4.6" && OCP_UPGRADE_VERSION.find()) {
+                                    env.UPGRADE_CHANNEL = "fast-4.6"
+                                    env.UPGRADE_VERSION = OCP_UPGRADE_VERSION[0]
+                                }
+                                else{
+                                    env.UPGRADE_IMAGE = env.UPGRADE_BUILD
+                                }
                             }
                         }
                         else{
@@ -182,9 +190,6 @@ pipeline {
                         createTemplate(env.OS_AUTH_URL, env.WORKER_VCPUS , "${WORKER_MEMORY_MB}", env.WORKER_PROCESSORS, env.WORKER_TEMPLATE)
                         createTemplate(env.OS_AUTH_URL, env.BASTION_VCPUS , "${BASTION_MEMORY_MB}", env.BASTION_PROCESSORS, env.BASTION_TEMPLATE)
                         createTemplate(env.OS_AUTH_URL, env.BOOTSTRAP_VCPUS , "${BOOTSTRAP_MEMORY_MB}", env.BOOTSTRAP_PROCESSORS, env.BOOTSTRAP_TEMPLATE)
-                        
-                        println "cluster current build: ${env.OPENSHIFT_IMAGE}" 
-                        println "cluster upgrade build: ${env.UPGRADE_IMAGE}"
                     }
                     catch (err)
                     {
