@@ -9,7 +9,7 @@ pipeline {
     environment {
         //users and credentials. All must be defined in Jenkins Credentials
         GITHUB_USER = credentials('GITHUB_USER')
-        IBMCLOUD_API_KEY = credentials('IBMCLOUD_API_KEY')
+        IBMCLOUD_API_KEY = credentials('IBMCLOUD_UPSTREAM_CI_API_KEY')
         GITHUB_TOKEN = credentials('GITHUB_TOKEN')
         REDHAT_USERNAME = credentials('REDHAT_USERNAME')
         REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
@@ -19,7 +19,7 @@ pipeline {
         TERRAFORM_VER = "0.13.4"
         IBM_CLOUD_REGION = "syd"
         IBM_CLOUD_ZONE = "syd04"
-        SERVICE_INSTANCE_ID = "6d030c4b-64a3-494d-aeed-8c453dd98903"
+        SERVICE_INSTANCE_ID = "31260716-9cdf-4c57-9d4f-7078913c66b6"
 
         BASTION_MEMORY = "8"
         BASTION_PROCESSORS = ".5"
@@ -31,7 +31,7 @@ pipeline {
         RHEL_USERNAME = "root"
         RHEL_SMT = "4"
         BASTION_HEALTH_STATUS = "WARNING"
-        BASTION_IMAGE_FILE =  "latest-${BASTION_IMAGE}-ocp-cicd-sydney-04.txt"
+        BASTION_IMAGE_FILE =  "latest-${BASTION_IMAGE}-rdr-ocp-cicd-sydney04.txt"
 
         //Makefile variables
         OPENSHIFT_POWERVS_SINGLE_INSTANCE_GIT_TF_DEPLOY_BRANCH="master" //The download branch

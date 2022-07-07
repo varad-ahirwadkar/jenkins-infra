@@ -9,7 +9,7 @@ pipeline {
     environment {
         //users and credentials. All must be defined in Jenkins Credentials
         GITHUB_USER = credentials('GITHUB_USER')
-        IBMCLOUD_API_KEY = credentials('IBMCLOUD_API_KEY')
+        IBMCLOUD_API_KEY = credentials('IBMCLOUD_UPSTREAM_CI_API_KEY')
         GITHUB_TOKEN = credentials('GITHUB_TOKEN')
         REDHAT_USERNAME = credentials('REDHAT_USERNAME')
         REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
@@ -20,12 +20,12 @@ pipeline {
 
         IBM_CLOUD_REGION = "osa"
         IBM_CLOUD_ZONE = "osa21"
-        SERVICE_INSTANCE_ID = "06f2a2b0-5bca-481a-8aa7-1f267beba862"
+        SERVICE_INSTANCE_ID = "33bfab5c-8626-4d5a-a3a7-d6e1a350738a"
 
         BASTION_IMAGE = "rhel-83"
         RHCOS_IMAGE = "rhcos-48"
-        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-ocp-cicd-osaka-21.txt"
-        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-ocp-cicd-osaka-21.txt"
+        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-cicd-osaka21.txt"
+        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-ocp-cicd-osaka21.txt"
         OCP_RELEASE = "4.8"
 
         //e2e specific variables

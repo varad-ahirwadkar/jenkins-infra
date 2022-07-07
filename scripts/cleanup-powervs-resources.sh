@@ -17,17 +17,15 @@ if [ $? -ne 0 ]; then
    ibmcloud config --check-version false
    ibmcloud plugin install power-iaas -f
    curl -sL https://raw.githubusercontent.com/ppc64le-cloud/pvsadm/master/get.sh | VERSION="v0.1.3" FORCE=1 bash
-   ibmcloud login -a cloud.ibm.com -r us-south -g ocp-cicd-resource-group -q --apikey=${IBMCLOUD_API_KEY}
+   ibmcloud login -a cloud.ibm.com -r us-south -g ibm-internal-cicd-resource-group -q --apikey=${IBMCLOUD_API_KEY}
    ibmcloud pi service-target "${CRN}"
 fi
-#Purge ssh keys
-keys=$(ibmcloud pi keys | grep "$cluster_id*" | cut -d' ' -f1)
-for key in $keys
-do
-         ibmcloud pi key-delete "$key"
-done
+
 if [ -n "$service_name" ]; then
   #Cleaning from clean job
+  #Purge ssh keys
+  pvsadm purge keys -n $service_name  --regexp "$cluster_id*" --no-prompt --ignore-errors
+
   #Purge vms
   pvsadm purge vms -n $service_name  --regexp "$cluster_id*" --no-prompt --ignore-errors
 

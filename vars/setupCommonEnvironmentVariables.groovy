@@ -14,7 +14,7 @@ def call() {
             env.LOCAL_REGISTRY_IMAGE = "docker.io/ibmcom/registry-ppc64le:2.6.2.5"
             env.SETUP_SQUID_PROXY = "true"
             //Needed for target service
-            env.CRN = "crn:v1:bluemix:public:power-iaas:tor01:a/65b64c1f1c29460e8c2e4bbfbd893c2c:4a1f10a2-0797-4ac8-9c41-44bc04b2d18f::"
+            env.CRN = "crn:v1:bluemix:public:power-iaas:tor01:a/7cfbd5381a434af7a09289e795840d4e:007e0e92-91d5-4f30-bc63-ca515660a4c2::"
 
             // Bellow 4 variables are not used. Disabled in template
             env.HELPERNODE_REPO = "https://github.com/RedHatOfficial/ocp4-helpernode"
