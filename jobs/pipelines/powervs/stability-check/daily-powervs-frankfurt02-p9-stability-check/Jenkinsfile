@@ -39,6 +39,11 @@ pipeline {
         TARGET = "deploy-openshift4-powervs-single-instance"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
 
+        BUCKET_NAME="ocp4-images-bucket"
+        PVSADM_VERSION="v0.1.5"
+        //TODO: Remove it when pvsadm #275 is resolved
+        SECRET_KEY_POWERVS = credentials('SECRET_KEY_POWERVS')
+        ACCESS_KEY_POWERVS = credentials('ACCESS_KEY_POWERVS')
         POWERVS = true
         SCRIPT_DEPLOYMENT = false
         WAIT_FOR_DEBUG = "0"
@@ -50,20 +55,30 @@ pipeline {
                 getArtifacts("powervs/poll-powervs-images", "${BASTION_IMAGE_FILE}" )
             }
         }
+
+        stage('Import Bastion Image') {
+            steps {
+                script {
+                    sh(returnStatus: false, returnStdout: false, script: "curl -sL https://raw.githubusercontent.com/ppc64le-cloud/pvsadm/master/get.sh | VERSION=${PVSADM_VERSION} FORCE=1 bash")
+                    script{
+                        if (fileExists("deploy/artifactory/${BASTION_IMAGE_FILE}")) {
+                            env.BASTION_IMAGE_NAME = readFile "deploy/artifactory/${BASTION_IMAGE_FILE}"
+                            env.BASTION_IMAGE_NAME = env.BASTION_IMAGE_NAME.replace("rhel","rhel-ci-stability").trim()
+                        }
+                        else{
+                            echo "${BASTION_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
+                            throw err
+                        }
+                    }
+                    importImage()
+                }
+            }
+        }
+
         stage('Initialize Environment') {
             steps {
                 initializeEnvironment()
                 setupTerraformPlugin()
-                script{
-                    if (fileExists("deploy/artifactory/${BASTION_IMAGE_FILE}")) {
-                            env.BASTION_IMAGE_NAME = readFile "deploy/artifactory/${BASTION_IMAGE_FILE}"
-                            env.BASTION_IMAGE_NAME = env.BASTION_IMAGE_NAME.trim()
-                    }
-                    else{
-                        echo "${BASTION_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
-                        throw err
-                    }
-                }
             }
         }
         stage('Deploy VM') {
@@ -86,9 +101,26 @@ pipeline {
                 cleanupOcp4Cluster()
                 message = "VM Image:`${env.BASTION_IMAGE_NAME}`, System Type: `${env.SYSTEM_TYPE}`, Private Network: `${env.NETWORK_NAME}` "
                 cleanupPowerVSResources()
+                cleanupImage()
                 notifyBySlack(currentBuild.result, message)
                 cleanWs()
             }
         }
     }
 }
+
+def importImage() {
+  sh'''
+      region="us-south"
+      image_name=$(echo "${BASTION_IMAGE_NAME}"|sed -e "s|rhel-ci-stability|rhel|g" -e "s|-tier1||g")
+      #TODO: Remove access and secret key when pvsadm #275 is resolved
+      pvsadm image import -b "${BUCKET_NAME}" -r "$region" -i "${SERVICE_INSTANCE_ID}" -o "$image_name.ova.gz" --pvs-image-name "${BASTION_IMAGE_NAME}" --pvs-storagetype tier1 --accesskey "${ACCESS_KEY_POWERVS}" --secretkey "${SECRET_KEY_POWERVS}" -w
+      #Adding sleep as sometimes the image is not picked by terraform
+      sleep 300
+  '''
+}
+
+def cleanupImage() {
+    sh(returnStatus: false, returnStdout: false, script: "pvsadm purge images -i ${SERVICE_INSTANCE_ID} --regexp ${BASTION_IMAGE_NAME} --no-prompt")
+}
+
