@@ -41,13 +41,13 @@ pipeline {
 
         BUCKET_NAME="ocp4-images-bucket"
         PVSADM_VERSION="v0.1.5"
-        //TODO: Remove it when pvsadm #275 is resolved
         SECRET_KEY_POWERVS = credentials('SECRET_KEY_POWERVS')
         ACCESS_KEY_POWERVS = credentials('ACCESS_KEY_POWERVS')
         POWERVS = true
         SCRIPT_DEPLOYMENT = false
         WAIT_FOR_DEBUG = "0"
-	}
+        BASTION_IMPORT_IMAGE_NAME="rhel-ci-86"
+	 }
 
     stages {
         stage('Pull PowerVS Image'){
@@ -63,7 +63,8 @@ pipeline {
                     script{
                         if (fileExists("deploy/artifactory/${BASTION_IMAGE_FILE}")) {
                             env.BASTION_IMAGE_NAME = readFile "deploy/artifactory/${BASTION_IMAGE_FILE}"
-                            env.BASTION_IMAGE_NAME = env.BASTION_IMAGE_NAME.replace("rhel","rhel-ci-stability").trim()
+                            env.BASTION_UPLOAD_IMAGE = env.BASTION_IMAGE_NAME.replace("-tier1","").trim()
+                            env.BASTION_IMAGE_NAME=sh(returnStdout:true, script: '''echo "${BASTION_IMPORT_IMAGE_NAME}-$(date +%m%d%Y%H%M)" ''').trim()
                         }
                         else{
                             echo "${BASTION_IMAGE_FILE} file does not exist. Please check poll-powervs-job"
@@ -112,9 +113,7 @@ pipeline {
 def importImage() {
   sh'''
       region="us-south"
-      image_name=$(echo "${BASTION_IMAGE_NAME}"|sed -e "s|rhel-ci-stability|rhel|g" -e "s|-tier1||g")
-      #TODO: Remove access and secret key when pvsadm #275 is resolved
-      pvsadm image import -b "${BUCKET_NAME}" -r "$region" -i "${SERVICE_INSTANCE_ID}" -o "$image_name.ova.gz" --pvs-image-name "${BASTION_IMAGE_NAME}" --pvs-storagetype tier1 --accesskey "${ACCESS_KEY_POWERVS}" --secretkey "${SECRET_KEY_POWERVS}" -w
+      pvsadm image import -b "${BUCKET_NAME}" -r "$region" -i "${SERVICE_INSTANCE_ID}" -o "${BASTION_UPLOAD_IMAGE}.ova.gz" --pvs-image-name "${BASTION_IMAGE_NAME}" --pvs-storagetype tier1 --accesskey "${ACCESS_KEY_POWERVS}" --secretkey "${SECRET_KEY_POWERVS}" -w
       #Adding sleep as sometimes the image is not picked by terraform
       sleep 300
   '''
