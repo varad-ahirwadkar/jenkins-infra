@@ -18,9 +18,9 @@ pipeline {
         //Env constants
         TERRAFORM_VER = "0.13.4"
 
-        IBM_CLOUD_REGION = "syd"
-        IBM_CLOUD_ZONE = "syd04"
-        SERVICE_INSTANCE_ID = "31260716-9cdf-4c57-9d4f-7078913c66b6"
+        IBM_CLOUD_REGION = "tor"
+        IBM_CLOUD_ZONE = "tor01"
+        SERVICE_INSTANCE_ID = "007e0e92-91d5-4f30-bc63-ca515660a4c2"
 
         BASTION_IMAGE = "rhel-86"
         RHCOS_IMAGE = "rhcos-411"
