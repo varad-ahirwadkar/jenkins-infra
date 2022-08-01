@@ -14,7 +14,6 @@ pipeline {
         REDHAT_USERNAME = credentials('REDHAT_USERNAME')
         REDHAT_PASSWORD = credentials('REDHAT_PASSWORD')
         PULL_SECRET = credentials('PULL_SECRET')
-        //TODO: Remove it when pvsadm #275 is resolved
         SECRET_KEY_POWERVS = credentials('SECRET_KEY_POWERVS_UPSTREAM_CI')
 	ACCESS_KEY_POWERVS = credentials('ACCESS_KEY_POWERVS_UPSTREAM_CI')
 
@@ -24,14 +23,10 @@ pipeline {
         IBM_CLOUD_REGION = "tor"
         IBM_CLOUD_ZONE = "tor01"
         SERVICE_INSTANCE_ID = "007e0e92-91d5-4f30-bc63-ca515660a4c2"
-        //TODO: Issue 2584 Running the jobs temporarily with Toronto
-        //IBM_CLOUD_REGION = "syd"
-        //IBM_CLOUD_ZONE = "syd04"
-        //SERVICE_INSTANCE_ID = "31260716-9cdf-4c57-9d4f-7078913c66b6"
 
         BASTION_IMAGE = "rhel-84"
         RHCOS_IMAGE = "rhcos-ci-410"
-        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-cicd-sydney04.txt"
+        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-cicd-toronto01.txt"
         OCP_RELEASE = "4.10"
 
         //e2e specific variables
