@@ -24,8 +24,8 @@ pipeline {
 
         BASTION_IMAGE = "rhel-86"
         RHCOS_IMAGE = "rhcos-411"
-        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-cicd-sydney04.txt"
-        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-ocp-cicd-sydney04.txt"
+        BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-cicd-toronto01.txt"
+        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-ocp-cicd-toronto01.txt"
         OCP_RELEASE = "4.11"
 
         //e2e specific variables
