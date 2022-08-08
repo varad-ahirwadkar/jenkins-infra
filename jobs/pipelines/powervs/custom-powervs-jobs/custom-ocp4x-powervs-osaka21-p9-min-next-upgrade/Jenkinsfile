@@ -29,17 +29,17 @@ pipeline {
         //Env constants
         TERRAFORM_VER = "0.13.4"
 
-        //rdr-ocp-upi-validation-syd04 service instance
-        IBM_CLOUD_REGION = "syd"
-        IBM_CLOUD_ZONE   = "syd04"
-        SERVICE_INSTANCE_ID = "78c0b345-7478-4882-820e-31287a67039d"
+        //rdr-ocp-upi-validation-osa21 service instance
+        IBM_CLOUD_REGION = "osa"
+        IBM_CLOUD_ZONE   = "osa21"
+        SERVICE_INSTANCE_ID = "219e149f-7dfc-4274-94ee-e6dcd3880233"
 
         OCP_RELEASE = "${params.Release}"
         UPGRADE_RELEASE ="${params.UpgradeRelease}"
         CURRENT_BUILD ="${params.CurrentBuild}"
         UPGRADE_BUILD ="${params.UpgradeBuild}"
         RHCOS_IMAGE = "rhcos-${OCP_RELEASE}".replaceAll("\\.", "");
-        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-ocp-upi-validation-syd04.txt"
+        RHCOS_IMAGE_FILE = "latest-${RHCOS_IMAGE}-rdr-ocp-upi-validation-osa21.txt"
         TIMEOUT = "${params.KeepFor}"
 
         //e2e specific variables
@@ -71,7 +71,7 @@ pipeline {
                 setupClusterConfig("${CONFIG_TYPE}")
                 script {
                     wrap([$class: 'BuildUser']) {
-                        env.INSTANCE_NAME = "rdr-ci-ocp-upi"
+                        env.INSTANCE_NAME = "rdr-qe-ocp-upi"
                    }
                     env.UPGRADE_DELAY_TIME = "600"
                     env.UPGRADE_PAUSE_TIME = "90"
@@ -87,7 +87,7 @@ pipeline {
                     } else {
                         env.BASTION_IMAGE = "rhel-85"
                     }
-                    env.BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-upi-validation-syd04.txt" 
+                    env.BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-upi-validation-osa21.txt" 
                 }
             }
         }
