@@ -19,14 +19,14 @@ pipeline {
         TERRAFORM_VER = "0.13.4"
         IBM_CLOUD_REGION = "lon"
         IBM_CLOUD_ZONE = "lon06"
-        SERVICE_INSTANCE_ID = "729b4527-6709-4ecb-8803-e0f1709ea945"
+        SERVICE_INSTANCE_ID = "86c41f82-81ef-430e-a589-9ada7a118773"
 
         BASTION_MEMORY = "8"
         BASTION_PROCESSORS = ".5"
 
         BASTION_IMAGE = "rhel-86"
         VM_ID_PREFIX = "rdr-cicd-stability"
-        SYSTEM_TYPE = "s922"
+        SYSTEM_TYPE = "e980"
         NETWORK_NAME = "ocp-net"
         RHEL_USERNAME = "root"
         RHEL_SMT = "4"
