@@ -41,8 +41,8 @@ pipeline {
         OPENSHIFT_POWERVC_GIT_TF_DEPLOY_BRANCH="main"//The download branch
 
         //Env constants
-        HARDWARE_CHOSE = "P8"
-        AVAILABILITY_ZONE = "p8-new"
+        HARDWARE_CHOSE = "P9"
+        AVAILABILITY_ZONE = "p9_pvm"
         TARGET = "deploy-openshift4-powervc"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
         TERRAFORM_VER = "1.2.0"

@@ -77,7 +77,6 @@ pipeline {
                     env.UPGRADE_PAUSE_TIME = "90"
                     env.SETUP_SQUID_PROXY = "true"
                     env.E2E_EXCLUDE_LIST="https://raw.github.ibm.com/redstack-power/e2e-exclude-list/${env.UPGRADE_RELEASE}-powervm/ocp${env.UPGRADE_RELEASE}_power_exclude_list.txt"
-<<<<<<< HEAD
                     if (env.OCP_RELEASE == "4.8" || env.OCP_RELEASE == "4.9"){
                         env.REDHAT_RELEASE = "8.4"
                         env.GOLANG_TARBALL = "https://dl.google.com/go/go1.16.5.linux-ppc64le.tar.gz"
@@ -90,9 +89,6 @@ pipeline {
                         env.REDHAT_RELEASE = "8.6"
                         env.GOLANG_TARBALL = "https://golang.org/dl/go1.18.6.linux-ppc64le.tar.gz"
                     }
-=======
-                    env.OPENSHIFT_POWERVC_GIT_TF_DEPLOY_BRANCH="main"
->>>>>>> 08b9e21 (Updating Z stream jobs)
                 }
             }
         }
