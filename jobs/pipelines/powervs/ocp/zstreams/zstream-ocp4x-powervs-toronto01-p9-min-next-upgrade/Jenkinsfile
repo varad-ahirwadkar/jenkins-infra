@@ -12,8 +12,8 @@ pipeline {
     parameters {
         string(defaultValue: '', description: 'Current Build(quay image or build number)', name: 'CurrentBuild')
         string(defaultValue: '', description: 'Upgrade Build(quay image or build number)', name: 'UpgradeBuild')
-        validatingString(defaultValue: '', description: "Build Release, eg. 4.9", name: "Release", regex: /^[0-9]\.[0-9]+$/, failedValidationMessage: "Please enter OCP releases like 4.9")
-        validatingString(defaultValue: '', description: "Upgrade Build Release, eg. 4.9", name: "UpgradeRelease", regex: /^[0-9]\.[0-9]+$/, failedValidationMessage: "Please enter OCP releases like 4.9")
+        validatingString(defaultValue: '', description: "Build Release, eg. 4.10", name: "Release", regex: /^[0-9]\.[0-9]+$/, failedValidationMessage: "Please enter OCP releases like 4.10")
+        validatingString(defaultValue: '', description: "Upgrade Build Release, eg. 4.11", name: "UpgradeRelease", regex: /^[0-9]\.[0-9]+$/, failedValidationMessage: "Please enter OCP releases like 4.11")
         string(defaultValue: '720', description: 'Enter time(in Minutes) to retain the cluster', name: 'KeepFor')
     }
 
@@ -48,10 +48,10 @@ pipeline {
         ENABLE_E2E_TEST = "false"
         GOLANG_TARBALL = "https://golang.org/dl/go1.17.6.linux-ppc64le.tar.gz"
 
-        //Makefile variables
-        OPENSHIFT_POWERVS_GIT_TF_DEPLOY_BRANCH="master" //The download branch
+        //Script arguments
+        RELEASE_VER = "${OCP_RELEASE}"
 
-        TARGET = "deploy-openshift4-powervs"
+        TARGET = "deploy-openshift4-powervs-script"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
         POWERVS = true
         SCRIPT_DEPLOYMENT = true
@@ -81,6 +81,9 @@ pipeline {
                         env.BASTION_IMAGE = "rhel-85"
                     } else {
                         env.BASTION_IMAGE = "rhel-86"
+                    }
+                    if (env.OCP_RELEASE == "4.12"){
+                        env.ARTIFACTS_VERSION="master"
                     }
                     env.BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-upi-validation-tor01.txt"
                 }
@@ -242,6 +245,7 @@ pipeline {
                     cleanupOcp4Cluster()
                     checkInfraError()
                     processE2eResults()
+                    cleanupPowerVSResources()
                     notifyBySlack(currentBuild.result, env.MESSAGE)
                 }
                 catch (err){

@@ -18,6 +18,9 @@ if [ $? -ne 0 ]; then
    ibmcloud plugin install power-iaas -f
    curl -sL https://raw.githubusercontent.com/ppc64le-cloud/pvsadm/master/get.sh | VERSION="v0.1.3" FORCE=1 bash
    ibmcloud login -a cloud.ibm.com -r us-south -g ibm-internal-cicd-resource-group -q --apikey=${IBMCLOUD_API_KEY}
+   if [ "rdr-qe-ocp-upi" = "$INSTANCE_NAME" ]; then 
+      ibmcloud login -a cloud.ibm.com -r ${VPCREGION} -g ${RESOURCE_GROUP} -q --apikey=${IBMCLOUD_API_KEY}
+   fi
    ibmcloud pi service-target "${CRN}"
 fi
 

@@ -11,8 +11,7 @@ pipeline {
     parameters {
         string(defaultValue: '', description: 'Current Build(quay image or build number)', name: 'CurrentBuild')
         string(defaultValue: '', description: 'Upgrade Build(quay image or build number)', name: 'UpgradeBuild')
-        string(defaultValue: '', description: 'Current Build Release', name: 'Release')
-        string(defaultValue: '', description: 'Upgrade Build Release', name: 'UpgradeRelease')
+        string(defaultValue: '', description: 'Build Release', name: 'Release')
         string(defaultValue: '720', description: 'Enter time(in Minutes) to retain the cluster', name: 'KeepFor')
     }
     environment {
@@ -31,15 +30,16 @@ pipeline {
 
         //Parameters
         OCP_RELEASE="${params.Release}"
-        UPGRADE_RELEASE="${params.UpgradeRelease}"
+        UPGRADE_RELEASE="${params.Release}"
         CONFIG_TYPE="min"
         CURRENT_BUILD="${params.CurrentBuild}"
         UPGRADE_BUILD="${params.UpgradeBuild}"
         TIMEOUT = "${params.KeepFor}"
+        ENABLE_E2E_TEST="true"
 
         //Env constants
-        HARDWARE_CHOSE = "P8"
-        AVAILABILITY_ZONE = "p8-new"
+        HARDWARE_CHOSE = "P9"
+        AVAILABILITY_ZONE = "p9_pvm"
         TARGET = "deploy-openshift4-powervc"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
         TERRAFORM_VER = "1.2.0"
@@ -48,25 +48,33 @@ pipeline {
         WAIT_FOR_DEBUG = "0"
         REDHAT_RELEASE = "8.4"
         ENABLE_SCALE_TEST="false"
+        GOLANG_TARBALL = "https://dl.google.com/go/go1.16.5.linux-ppc64le.tar.gz"
     }
 
     stages {
+        stage('Clone ansible extra') {
+            steps {
+                cloneRepo("https://github.com/ocp-power-automation/ocp4-playbooks-extras", "ocp4-playbooks-extras", "*/main")
+            }
+        }
         stage('Setup Common Environment Variables') {
             steps {
                 setupCommonEnvironmentVariables()
                 setupClusterConfig("${CONFIG_TYPE}")
                 script {
                     wrap([$class: 'BuildUser']) {
-                        env.INSTANCE_NAME = "rdr-zsnxt"
+                        env.INSTANCE_NAME = "rdr-zscurst"
                     }
                     env.OS_TENANT_NAME="icp-test"
                     env.OS_NETWORK = "workload"
                     env.OS_PRIVATE_NETWORK = "workload"
                     env.SCG_ID = "4366c1e2-bb4f-4c3d-98a2-06cc39bbc58d"
                     env.MOUNT_ETCD_RAMDISK = "false"
+                    env.E2E_BRANCH="release-${env.UPGRADE_RELEASE}"
                     env.UPGRADE_DELAY_TIME = "600"
                     env.UPGRADE_PAUSE_TIME = "90"
                     env.SETUP_SQUID_PROXY = "true"
+                    env.E2E_EXCLUDE_LIST="https://raw.github.ibm.com/redstack-power/e2e-exclude-list/${env.UPGRADE_RELEASE}-powervm/ocp${env.UPGRADE_RELEASE}_power_exclude_list.txt"
                     env.OPENSHIFT_POWERVC_GIT_TF_DEPLOY_BRANCH="main"
                 }
             }
@@ -126,7 +134,15 @@ pipeline {
                                 '''
                             }
                             else {
-                               env.UPGRADE_IMAGE=env.UPGRADE_BUILD
+                                def OCP_VERSION_PATTERN = ~/[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}/
+                                def OCP_UPGRADE_VERSION = (env.UPGRADE_BUILD =~ OCP_VERSION_PATTERN)
+                                if (env.UPGRADE_RELEASE == "4.6" && OCP_UPGRADE_VERSION.find()) {
+                                    env.UPGRADE_CHANNEL = "fast-4.6"
+                                    env.UPGRADE_VERSION = OCP_UPGRADE_VERSION[0]
+                                }
+                                else{
+                                    env.UPGRADE_IMAGE = env.UPGRADE_BUILD
+                                }
                             }
                         }
                         else{
@@ -196,9 +212,10 @@ pipeline {
                 setupKubeconfigOcp4()
             }
         }
-        stage('Validate CO status') {
+        stage('Setup and run ansible extra') {
             steps {
-                validateCoStatus()
+               setupAndRunE2e()
+               notifyBySlack(currentBuild.result, "E2E has completed !!")
             }
         }
         stage('Gather pprof and prometheus data') {
@@ -231,12 +248,14 @@ pipeline {
         }
     }
     post {
-        always {
+        always { 
             script {
                 try{
-                    archiveAllArtifacts("deploy/vars.tfvars", "cpu-pre.pprof", "heap-pre.pprof", "prometheus.tar.gz", "deploy/cron.log", "must-gather.tar.gz")
+                    archiveAllArtifacts("deploy/conformance-parallel-out.txt.tar.gz", "deploy/summary.txt", "deploy/vars.tfvars",
+                        "cpu-pre.pprof", "heap-pre.pprof", "prometheus.tar.gz", "deploy/cron.log", "must-gather.tar.gz")
                     cleanupOcp4Cluster()
                     checkInfraError()
+                    processE2eResults()
                     notifyBySlack(currentBuild.result, env.MESSAGE)
                 }
                 catch (err){

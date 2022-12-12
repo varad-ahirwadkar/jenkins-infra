@@ -9,11 +9,11 @@ pipeline {
         }
     }
     parameters {
-        string(defaultValue: '', description: 'Current Build(quay image or build number)', name: 'CurrentBuild')
-        string(defaultValue: '', description: 'Upgrade Build(quay image or build number)', name: 'UpgradeBuild')
+        string(defaultValue: '', description: 'Build(quay image or build number)', name: 'Build')
         string(defaultValue: '', description: 'Build Release', name: 'Release')
         string(defaultValue: '720', description: 'Enter time(in Minutes) to retain the cluster', name: 'KeepFor')
     }
+
     environment {
         //users and credentials. All must be defined in Jenkins Credentials
         GITHUB_USER = credentials('GITHUB_USER')
@@ -30,16 +30,14 @@ pipeline {
 
         //Parameters
         OCP_RELEASE="${params.Release}"
-        UPGRADE_RELEASE="${params.Release}"
         CONFIG_TYPE="min"
-        CURRENT_BUILD="${params.CurrentBuild}"
-        UPGRADE_BUILD="${params.UpgradeBuild}"
+        BUILD="${params.Build}"
         TIMEOUT = "${params.KeepFor}"
         ENABLE_E2E_TEST="true"
 
         //Env constants
-        HARDWARE_CHOSE = "P8"
-        AVAILABILITY_ZONE = "p8-new"
+        HARDWARE_CHOSE = "P9"
+        AVAILABILITY_ZONE = "p9_pvm"
         TARGET = "deploy-openshift4-powervc"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
         TERRAFORM_VER = "1.2.0"
@@ -63,18 +61,14 @@ pipeline {
                 setupClusterConfig("${CONFIG_TYPE}")
                 script {
                     wrap([$class: 'BuildUser']) {
-                        env.INSTANCE_NAME = "rdr-zscurst"
+                        env.INSTANCE_NAME = "rdr-zstream"
                     }
                     env.OS_TENANT_NAME="icp-test"
                     env.OS_NETWORK = "workload"
                     env.OS_PRIVATE_NETWORK = "workload"
                     env.SCG_ID = "4366c1e2-bb4f-4c3d-98a2-06cc39bbc58d"
                     env.MOUNT_ETCD_RAMDISK = "false"
-                    env.E2E_BRANCH="release-${env.UPGRADE_RELEASE}"
-                    env.UPGRADE_DELAY_TIME = "600"
-                    env.UPGRADE_PAUSE_TIME = "90"
                     env.SETUP_SQUID_PROXY = "true"
-                    env.E2E_EXCLUDE_LIST="https://raw.github.ibm.com/redstack-power/e2e-exclude-list/${env.UPGRADE_RELEASE}-powervm/ocp${env.UPGRADE_RELEASE}_power_exclude_list.txt"
                     env.OPENSHIFT_POWERVC_GIT_TF_DEPLOY_BRANCH="main"
                 }
             }
@@ -99,54 +93,26 @@ pipeline {
                         gbToMb()
                         pullSecret()
                         env.OPENSHIFT_IMAGE = ""
-                        sh(returnStdout: false, script: "apt update && apt install docker docker.io jq -y")
-                        if (env.CURRENT_BUILD?.trim()) {
-                            if (!env.CURRENT_BUILD.contains('quay')) {
-                                env.OPENSHIFT_IMAGE  = "sys-powercloud-docker-local.artifactory.swg-devops.com/ocp-ppc64le/release-ppc64le:${env.CURRENT_BUILD}"
+                        if (env.BUILD?.trim()) {
+                            if (!env.BUILD.contains('quay')) {
+                                env.OPENSHIFT_IMAGE  = "sys-powercloud-docker-local.artifactory.swg-devops.com/ocp-ppc64le/release-ppc64le:${env.BUILD}"
                                 sh '''
+                                    apt update
+                                    apt install docker docker.io jq -y
                                     docker login sys-powercloud-docker-local.artifactory.swg-devops.com -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
                                     docker pull ${OPENSHIFT_IMAGE}
                                     if [ $? -ne 0 ]; then
-                                        echo "${OPENSHIFT_IMAGE} not found"
+                                        echo "${OPENSHIFT_IMAGE}  not found"
                                         exit 1
                                     fi
                                 '''
                             }
                             else {
-                               env.OPENSHIFT_IMAGE=env.CURRENT_BUILD
+                               env.OPENSHIFT_IMAGE=env.BUILD
                             }
                         }
                         else {
                             echo "CURRENT build is empty"
-                            throw err
-                        }
-                        env.UPGRADE_IMAGE = ""
-                        if (env.UPGRADE_BUILD?.trim()) {
-                            if (!env.UPGRADE_BUILD.contains('quay')) {
-                                env.UPGRADE_IMAGE  = "sys-powercloud-docker-local.artifactory.swg-devops.com/ocp-ppc64le/release-ppc64le:${env.UPGRADE_BUILD}"
-                                sh '''
-                                    docker login sys-powercloud-docker-local.artifactory.swg-devops.com -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
-                                    docker pull ${UPGRADE_IMAGE}
-                                    if [ $? -ne 0 ]; then
-                                        echo "${UPGRADE_IMAGE} not found"
-                                        exit 1
-                                    fi
-                                '''
-                            }
-                            else {
-                                def OCP_VERSION_PATTERN = ~/[0-9]{1}\.[0-9]{1,2}\.[0-9]{1,2}/
-                                def OCP_UPGRADE_VERSION = (env.UPGRADE_BUILD =~ OCP_VERSION_PATTERN)
-                                if (env.UPGRADE_RELEASE == "4.6" && OCP_UPGRADE_VERSION.find()) {
-                                    env.UPGRADE_CHANNEL = "fast-4.6"
-                                    env.UPGRADE_VERSION = OCP_UPGRADE_VERSION[0]
-                                }
-                                else{
-                                    env.UPGRADE_IMAGE = env.UPGRADE_BUILD
-                                }
-                            }
-                        }
-                        else{
-                            echo "Upgrade build is empty"
                             throw err
                         }
                         if (fileExists("deploy/artifactory/rhcos-${OCP_RELEASE}-powercloud-latest.txt")) {
@@ -248,7 +214,7 @@ pipeline {
         }
     }
     post {
-        always { 
+        always {
             script {
                 try{
                     archiveAllArtifacts("deploy/conformance-parallel-out.txt.tar.gz", "deploy/summary.txt", "deploy/vars.tfvars",
@@ -259,7 +225,7 @@ pipeline {
                     notifyBySlack(currentBuild.result, env.MESSAGE)
                 }
                 catch (err){
-                    echo 'Error ! Always block failed!'
+                    echo 'Error ! Always block failed!' 
                 }
                 finally{
                     cleanWs()
