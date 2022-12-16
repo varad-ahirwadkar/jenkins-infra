@@ -54,7 +54,7 @@ pipeline {
         TARGET = "deploy-openshift4-powervs"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
         POWERVS = true
-        SCRIPT_DEPLOYMENT = false
+        SCRIPT_DEPLOYMENT = true
         WAIT_FOR_DEBUG = "0"
 
         // Type of configuration
@@ -78,9 +78,9 @@ pipeline {
                     env.UPGRADE_DELAY_TIME = "600"
                     env.UPGRADE_PAUSE_TIME = "90"
                     if (env.OCP_RELEASE == "4.10"){
-                        env.BASTION_IMAGE = "rhel-86"
-                    } else {
                         env.BASTION_IMAGE = "rhel-85"
+                    } else {
+                        env.BASTION_IMAGE = "rhel-86"
                     }
                     env.BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-upi-validation-tor01.txt"
                 }
