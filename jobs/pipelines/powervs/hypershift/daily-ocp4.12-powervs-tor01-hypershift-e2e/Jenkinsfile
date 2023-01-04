@@ -2,21 +2,19 @@
 
 pipeline {
     agent {
-        docker {
-            image 'quay.io/powercloud/inbound-agent:4.10-3.2'
-            args '-v /etc/resolv.conf:/etc/resolv.conf'
-            label 'jump-vpc-x86_64'
+        kubernetes {
+            inheritFrom 'jenkins-agent'
         }
     }
     environment {
         //users and credentials. All must be defined in Jenkins Credentials
         IBMCLOUD_API_KEY = credentials('IBM_PCLOUD_QE_API_KEY')
         PULL_SECRET_CRED = credentials('PULL_SECRET')
-        MANAGEMENT_CLUSTER = "hyp-ci"
+        MANAGEMENT_CLUSTER = "rdr-pravin-hypnone"
         REGION = "tor"
         ZONE = "tor01"
         VPC_REGION = "ca-tor"
-        RESOURCE_GROUP = "upi-resource-group"
+        RESOURCE_GROUP = "ipi-resource-group"
         BASEDOMAIN = "hypershift-ppc64le.com"
         PROC_TYPE = "dedicated"
         PROCESSORS = 1
