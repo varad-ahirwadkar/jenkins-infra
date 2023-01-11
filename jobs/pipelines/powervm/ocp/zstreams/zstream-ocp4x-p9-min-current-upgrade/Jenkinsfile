@@ -10,7 +10,7 @@ pipeline {
     }
 
     environment {
-        TIMEOUT = "30"
+        TIMEOUT = "60"
     }
 
     stages {
