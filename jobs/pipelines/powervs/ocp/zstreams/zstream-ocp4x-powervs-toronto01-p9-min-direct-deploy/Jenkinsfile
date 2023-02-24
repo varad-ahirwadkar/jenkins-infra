@@ -27,11 +27,11 @@ pipeline {
         //Env constants
         TERRAFORM_VER = "1.2.0"
 
-        //rdr-ocp-upi-validation-tor01 service instance
-        IBM_CLOUD_REGION = "tor"
-        IBM_CLOUD_ZONE = "tor01"
-        SERVICE_INSTANCE_ID = "54903e51-c4d2-42be-bfa1-d31c708ddf31"
-        VPCREGION = "ca-tor"
+        //rdr-ocp-upi-validation-lon06 service instance
+        IBM_CLOUD_REGION = "lon"
+        IBM_CLOUD_ZONE = "lon06"
+        SERVICE_INSTANCE_ID = "006eb37d-a37a-45eb-bb8c-07a8457cc3c9"
+        VPCREGION = "eu-gb"
         RESOURCE_GROUP = "upi-resource-group"
 
         OCP_RELEASE = "${params.Release}"
