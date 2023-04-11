@@ -5,7 +5,7 @@ pipeline {
         docker {
             image 'quay.io/powercloud/inbound-agent:4.10-3.2'
             args '-v /etc/resolv.conf:/etc/resolv.conf'
-            label 'jump-vpc-x86_64'
+            label 'jump-vpc-x86_64-1'
         }
     }
 
