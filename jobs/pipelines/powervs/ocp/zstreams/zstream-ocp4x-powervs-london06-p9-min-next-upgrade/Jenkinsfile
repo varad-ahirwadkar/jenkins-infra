@@ -5,7 +5,7 @@ pipeline {
         docker {
             image 'quay.io/powercloud/inbound-agent:4.10-3.3'
             args '-v /etc/resolv.conf:/etc/resolv.conf'
-            label 'jump-vpc-x86_64'
+            label 'jump-vpc-x86_64-1'
         }
     }
     
@@ -74,12 +74,12 @@ pipeline {
                     wrap([$class: 'BuildUser']) {
                         env.INSTANCE_NAME = "rdr-qe-ocp-upi"
                    }
-                    if (env.OCP_RELEASE == "4.8" || env.OCP_RELEASE == "4.9"){
-                        env.BASTION_IMAGE = "rhel-84"
-                    } else if (env.OCP_RELEASE == "4.10" || env.OCP_RELEASE == "4.11"){
+                    if (env.OCP_RELEASE == "4.10" || env.OCP_RELEASE == "4.11"){
                         env.BASTION_IMAGE = "rhel-85"
-                    } else {
+                    } else if (env.OCP_RELEASE == "4.12") {
                         env.BASTION_IMAGE = "rhel-86"
+                    } else {
+                        env.BASTION_IMAGE = "rhel-92"
                     }
                     env.UPGRADE_DELAY_TIME = "600"
                     env.UPGRADE_PAUSE_TIME = "90"
@@ -186,6 +186,30 @@ pipeline {
         stage('Deploy OCP Cluster') {
             steps {
                 deployCluster()
+            }
+        }
+        stage('Setup oc client') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try
+                    {
+                        sh '''
+                            oc adm release extract --tools ${UPGRADE_IMAGE} --registry-config='deploy/data/pull-secret.txt'
+                            tar -xf openshift-client-linux-*${UPGRADE_RELEASE}*.tar.gz kubectl oc
+                            cp kubectl oc /usr/bin/
+                            rm -rf openshift-*${UPGRADE_RELEASE}*.tar.gz
+                        '''     
+                    }
+                    catch (err)
+                    {
+                        echo 'Error ! oc client setup failed !'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                }
             }
         }
         stage('Run crontab script for capturing outputs of multiple commands') {

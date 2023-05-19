@@ -5,7 +5,7 @@ pipeline {
         docker {
             image 'quay.io/powercloud/inbound-agent:4.10-3.3'
             args '-v /etc/resolv.conf:/etc/resolv.conf'
-            label 'jump-vpc-x86_64'
+            label 'jump-vpc-x86_64-1'
         }
     }
 
@@ -33,15 +33,18 @@ pipeline {
                         for (int i = 0; i < filenames.size(); i++) {
                             filename = filenames[i].trim()
                             
-                            //Fetching release files information
-                            (release, next_release, next_release_file) = getReleases(filename)
-                            latestBuild   = readFile(filename).readLines()
-                            latestBuild   = latestBuild[0].trim()
-                            
-                            if (latestBuild != "" && latestBuild != null){
-                                currentStableBuild_url  = getStableBuild(latestBuild)
-                                nextStableBuild_url     = next_release_builds(next_release_file)
-                                triggerBuild(release, latestBuild, currentStableBuild_url, nextStableBuild_url, next_release)
+                            //Skips trigger for 4.12 release
+                            if(filename != "versions/4.12.txt") {
+                                //Fetching release files information
+                                (release, next_release, next_release_file) = getReleases(filename)
+                                latestBuild   = readFile(filename).readLines()
+                                latestBuild   = latestBuild[0].trim()
+                                
+                                if (latestBuild != "" && latestBuild != null){
+                                    currentStableBuild_url  = getStableBuild(latestBuild)
+                                    nextStableBuild_url     = next_release_builds(next_release_file)
+                                    triggerBuild(release, latestBuild, currentStableBuild_url, nextStableBuild_url, next_release)
+                                }
                             }
                         }
                     }    
@@ -65,25 +68,29 @@ def getChangedFilesList() {
         then
             mkdir  "versions"
         fi
-        for x in 8 9 10 11
+        # Checking if new builds are available for OCP 10, 11 and 12
+        for ocp_version in 10 11 12
         do
-            VERSION=`curl -X GET "https://quay.io/api/v1/repository/openshift-release-dev/ocp-release/tag/?onlyActiveTags=true&limit=100" | jq '.tags | sort_by(.start_ts) | .[].name' | grep "4.${x}.*ppc64le" | grep -v "multi\\|rc\\|ec\\|fc" | tail -1 | tr -d '"'`
-            if [ "$VERSION" = "" ] && [ ! -f versions/4.$x.txt ];
+            VERSION=`curl -X GET "https://quay.io/api/v1/repository/openshift-release-dev/ocp-release/tag/?onlyActiveTags=true&limit=100" | jq '.tags | sort_by(.start_ts) | .[].name' | grep "4.${ocp_version}.*ppc64le" | grep -v "multi\\|rc\\|ec\\|fc" | tail -1 | tr -d '"'`
+            if [ "$VERSION" = "" ] && [ ! -f versions/4.$ocp_version.txt ];
             then
+                # Checking the quay pages for new builds
                 for i in 2 3 4 5 6 7 8 9 10 11 12
                 do
-                    VERSION=`curl -X GET "https://quay.io/api/v1/repository/openshift-release-dev/ocp-release/tag/?onlyActiveTags=true&limit=100&page=$i" | jq '.tags | sort_by(.start_ts) | .[].name' | grep "4.${x}.*ppc64le" | grep -v "multi\\|rc\\|ec\\|fc" | tail -1 | tr -d '"'`
+                    VERSION=`curl -X GET "https://quay.io/api/v1/repository/openshift-release-dev/ocp-release/tag/?onlyActiveTags=true&limit=100&page=$i" | jq '.tags | sort_by(.start_ts) | .[].name' | grep "4.${ocp_version}.*ppc64le" | grep -v "multi\\|rc\\|ec\\|fc" | tail -1 | tr -d '"'`
                     if [ "$VERSION" != "" ] ;
                     then
                         break
                     fi
                 done
-            fi      
-            if [ "$(cat versions/4.$x.txt | grep ppc64le)" != "$VERSION" ] && [ "$VERSION" != "" ];
+            fi
+
+            # Comparing the builds from quay and artifacts, updating the artifcats with lastest builds
+            if [ "$(cat versions/4.$ocp_version.txt | grep ppc64le)" != "$VERSION" ] && [ "$VERSION" != "" ];
             then
-                echo $VERSION > versions/4.$x.txt
-                echo -n $(date +%Y-%m-%d) >> versions/4.$x.txt 
-                echo "versions/4.$x.txt"
+                echo $VERSION > versions/4.$ocp_version.txt
+                echo -n $(date +%Y-%m-%d) >> versions/4.$ocp_version.txt 
+                echo "versions/4.$ocp_version.txt"
             fi
         done
     '''
@@ -140,7 +147,7 @@ def next_release_builds(release_file){
         }
     }else{
         // if next release file does not exists
-        nextbuild = "default"
+        nextbuild = "NA"
     }
     return nextbuild      
 }
@@ -170,7 +177,7 @@ void triggerBuild(release, latestBuild, currentStableBuild, nextStableBuild, nex
     }
     
     //Upgrade Job Trigger for current release ocp build to next release's stable ocp build
-    if (nextStableBuild != "default"){
+    if (nextStableBuild != "NA"){
         echo "Next Release Stable Build: ${nextStableBuild}"
         sleep 840
         build job: 'zstream-ocp4x-p8-min-next-upgrade', wait: false,parameters: [

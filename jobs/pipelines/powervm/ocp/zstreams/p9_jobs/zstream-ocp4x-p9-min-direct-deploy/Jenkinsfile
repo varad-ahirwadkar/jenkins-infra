@@ -42,8 +42,8 @@ pipeline {
         OPENSHIFT_POWERVC_GIT_TF_DEPLOY_BRANCH="main"//The download branch
 
         //Env constants
-        HARDWARE_CHOSE = "P8"
-        AVAILABILITY_ZONE = "p8-new"
+        HARDWARE_CHOSE = "P9"
+        AVAILABILITY_ZONE = "workload"
         TARGET = "deploy-openshift4-powervc"
         TEMPLATE_FILE = ".${TARGET}.tfvars.template"
         TERRAFORM_VER = "1.2.0"
@@ -65,7 +65,7 @@ pipeline {
                 setupClusterConfig("${CONFIG_TYPE}")
                 script {
                     wrap([$class: 'BuildUser']) {
-                        env.INSTANCE_NAME = "rdr-zstream"
+                        env.INSTANCE_NAME = "rdr-zstream-p9"
                     }
                     env.OS_TENANT_NAME="icp-test"
                     env.OS_NETWORK = "workload"
@@ -73,17 +73,14 @@ pipeline {
                     env.SCG_ID = "4366c1e2-bb4f-4c3d-98a2-06cc39bbc58d"
                     env.MOUNT_ETCD_RAMDISK = "false"
                     env.SETUP_SQUID_PROXY = "true"
-                    if (env.OCP_RELEASE == "4.8" || env.OCP_RELEASE == "4.9"){
-                        env.REDHAT_RELEASE = "8.4"
-                        env.GOLANG_TARBALL = "https://dl.google.com/go/go1.16.5.linux-ppc64le.tar.gz"
-                    }
-                    else if (env.OCP_RELEASE == "4.10" || env.OCP_RELEASE == "4.11"){
-                        env.REDHAT_RELEASE = "8.5"
-                        env.GOLANG_TARBALL = "https://dl.google.com/go/go1.17.6.linux-ppc64le.tar.gz"
+
+                    if (env.OCP_RELEASE == "4.12"){
+                        env.REDHAT_RELEASE = "8.6"
+                        env.GOLANG_TARBALL = "https://dl.google.com/go/go1.18.6.linux-ppc64le.tar.gz"
                     }
                     else {
-                        env.REDHAT_RELEASE = "8.6"
-                        env.GOLANG_TARBALL = "https://golang.org/dl/go1.18.6.linux-ppc64le.tar.gz"
+                        env.REDHAT_RELEASE = "9.2"
+                        env.GOLANG_TARBALL = "https://golang.org/dl/go1.19.6.linux-ppc64le.tar.gz"
                     }
                 }
             }
@@ -115,7 +112,7 @@ pipeline {
                                     nerdctl login sys-powercloud-docker-local.artifactory.swg-devops.com -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
                                     nerdctl pull ${OPENSHIFT_IMAGE}
                                     if [ $? -ne 0 ]; then
-                                        echo "${OPENSHIFT_IMAGE}  not found"
+                                        echo "${OPENSHIFT_IMAGE} not found"
                                         exit 1
                                     fi
                                 '''
