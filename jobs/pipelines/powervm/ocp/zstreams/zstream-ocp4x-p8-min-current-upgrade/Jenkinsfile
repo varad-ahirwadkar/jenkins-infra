@@ -74,11 +74,9 @@ pipeline {
                     env.OS_PRIVATE_NETWORK = "workload"
                     env.SCG_ID = "4366c1e2-bb4f-4c3d-98a2-06cc39bbc58d"
                     env.MOUNT_ETCD_RAMDISK = "false"
-                    env.E2E_BRANCH="release-${env.UPGRADE_RELEASE}"
                     env.UPGRADE_DELAY_TIME = "600"
                     env.UPGRADE_PAUSE_TIME = "90"
                     env.SETUP_SQUID_PROXY = "true"
-                    env.E2E_EXCLUDE_LIST="https://raw.github.ibm.com/redstack-power/e2e-exclude-list/${env.UPGRADE_RELEASE}-powervm/ocp${env.UPGRADE_RELEASE}_power_exclude_list.txt"
                     if (env.OCP_RELEASE == "4.8" || env.OCP_RELEASE == "4.9"){
                         env.REDHAT_RELEASE = "8.4"
                         env.GOLANG_TARBALL = "https://dl.google.com/go/go1.16.5.linux-ppc64le.tar.gz"
@@ -206,6 +204,30 @@ pipeline {
         stage('Deploy OCP Cluster') {
             steps {
                 deployCluster()
+            }
+        }
+        stage('Setup oc client') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try
+                    {
+                        sh '''
+                            /usr/bin/oc adm release extract --tools ${UPGRADE_IMAGE} --registry-config='deploy/data/pull-secret.txt'
+                            tar -xf openshift-client-linux-*${OCP_RELEASE}*.tar.gz kubectl oc
+                            cp kubectl oc /usr/bin/
+                            rm -rf openshift-*${OCP_RELEASE}*.tar.gz
+                        '''     
+                    }
+                    catch (err)
+                    {
+                        echo 'Error ! oc client setup failed !'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                }
             }
         }
         stage('Run crontab script for capturing outputs of multiple commands') {

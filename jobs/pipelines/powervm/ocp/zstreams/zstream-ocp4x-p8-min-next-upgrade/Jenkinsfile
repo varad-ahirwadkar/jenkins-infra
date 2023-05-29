@@ -199,6 +199,30 @@ pipeline {
                 deployCluster()
             }
         }
+        stage('Setup oc client') {
+            steps {
+                script {
+                    ansiColor('xterm') {
+                        echo ""
+                    }
+                    try
+                    {
+                        sh '''
+                            /usr/bin/oc adm release extract --tools ${UPGRADE_IMAGE} --registry-config='deploy/data/pull-secret.txt'
+                            tar -xf openshift-client-linux-*${UPGRADE_RELEASE}*.tar.gz kubectl oc
+                            cp kubectl oc /usr/bin/
+                            rm -rf openshift-*${UPGRADE_RELEASE}*.tar.gz
+                        '''     
+                    }
+                    catch (err)
+                    {
+                        echo 'Error ! oc client setup failed !'
+                        env.FAILED_STAGE=env.STAGE_NAME
+                        throw err
+                    }
+                }
+            }
+        }
         stage('Run crontab script for capturing outputs of multiple commands') {
             steps {
                 crontabCommandCaptureScript()
