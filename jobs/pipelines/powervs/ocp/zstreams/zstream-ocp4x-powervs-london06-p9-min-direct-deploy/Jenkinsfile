@@ -80,7 +80,8 @@ pipeline {
                         env.BASTION_IMAGE = "rhel-92"
                         env.GOLANG_TARBALL = "https://golang.org/dl/go1.19.6.linux-ppc64le.tar.gz"
                     }
-            }
+               }
+           }
         }
         stage('pull artifact') {
             steps {
