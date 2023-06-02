@@ -80,6 +80,8 @@ pipeline {
                         env.BASTION_IMAGE = "rhel-92"
                         env.GOLANG_TARBALL = "https://golang.org/dl/go1.19.6.linux-ppc64le.tar.gz"
                     }
+                    env.SYSTEM_TYPE = "e980"
+                    env.BASTION_IMAGE_FILE = "latest-${BASTION_IMAGE}-rdr-ocp-upi-validation-lon06.txt"
                }
            }
         }
