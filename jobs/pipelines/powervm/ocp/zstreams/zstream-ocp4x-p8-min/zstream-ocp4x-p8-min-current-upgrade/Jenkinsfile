@@ -69,6 +69,9 @@ pipeline {
                     wrap([$class: 'BuildUser']) {
                         env.INSTANCE_NAME = "rdr-zscurst"
                     }
+                    env.BASTION_VCPUS = "1"
+                    env.BOOTSTRAP_VCPUS = "1"
+                    env.BOOTSTRAP_MEMORY = "8"
                     env.OS_TENANT_NAME="icp-test"
                     env.OS_NETWORK = "workload"
                     env.OS_PRIVATE_NETWORK = "workload"
@@ -79,11 +82,8 @@ pipeline {
                     env.UPGRADE_PAUSE_TIME = "90"
                     env.SETUP_SQUID_PROXY = "true"
                     env.E2E_EXCLUDE_LIST="https://raw.github.ibm.com/redstack-power/e2e-exclude-list/${env.UPGRADE_RELEASE}-powervm/ocp${env.UPGRADE_RELEASE}_power_exclude_list.txt"
-                    if (env.OCP_RELEASE == "4.8" || env.OCP_RELEASE == "4.9"){
-                        env.REDHAT_RELEASE = "8.4"
-                        env.GOLANG_TARBALL = "https://dl.google.com/go/go1.16.5.linux-ppc64le.tar.gz"
-                    }
-                    else if (env.OCP_RELEASE == "4.10" || env.OCP_RELEASE == "4.11"){
+                    
+                    if (env.OCP_RELEASE == "4.10" || env.OCP_RELEASE == "4.11"){
                         env.REDHAT_RELEASE = "8.5"
                         env.GOLANG_TARBALL = "https://dl.google.com/go/go1.17.6.linux-ppc64le.tar.gz"
                     }

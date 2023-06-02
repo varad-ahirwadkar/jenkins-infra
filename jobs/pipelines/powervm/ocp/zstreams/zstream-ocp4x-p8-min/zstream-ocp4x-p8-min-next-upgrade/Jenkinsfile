@@ -64,6 +64,9 @@ pipeline {
                     wrap([$class: 'BuildUser']) {
                         env.INSTANCE_NAME = "rdr-zsnxt"
                     }
+                    env.BASTION_VCPUS = "1"
+                    env.BOOTSTRAP_VCPUS = "1"
+                    env.BOOTSTRAP_MEMORY = "8"
                     env.OS_TENANT_NAME="icp-test"
                     env.OS_NETWORK = "workload"
                     env.OS_PRIVATE_NETWORK = "workload"
@@ -73,10 +76,7 @@ pipeline {
                     env.UPGRADE_PAUSE_TIME = "90"
                     env.SETUP_SQUID_PROXY = "true"
 
-                    if (env.OCP_RELEASE == "4.8" || env.OCP_RELEASE == "4.9"){
-                        env.REDHAT_RELEASE = "8.4"
-                    }
-                    else if (env.OCP_RELEASE == "4.10" || env.OCP_RELEASE == "4.11"){
+                    if (env.OCP_RELEASE == "4.10" || env.OCP_RELEASE == "4.11"){
                         env.REDHAT_RELEASE = "8.5"
                     }
                     else {
